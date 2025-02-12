@@ -8,4 +8,5 @@ import org.springframework.stereotype.Repository;
 public interface CommandeDao extends JpaRepository<Commande, Long> {
     Commande findByRef(String ref);
     void deleteByRef(String ref);
+
 }

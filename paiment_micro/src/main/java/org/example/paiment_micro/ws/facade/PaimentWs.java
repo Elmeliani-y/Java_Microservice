@@ -5,6 +5,7 @@ import org.example.paiment_micro.service.facade.PaimentService;
 import org.example.paiment_micro.ws.converter.PaimentConverter;
 import org.example.paiment_micro.ws.dto.PaimentDto;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,6 +14,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("api/paiment")
+@EnableDiscoveryClient
 public class PaimentWs {
     @Autowired
     private PaimentService paimentService;

@@ -5,13 +5,15 @@ import org.example.command_micro.service.facade.CommandService;
 import org.example.command_micro.ws.Dto.CommandeDto;
 import org.example.command_micro.ws.convetor.CommandeConverter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-
+@EnableDiscoveryClient
 @RestController
 @RequestMapping("api/commande")
 public class CommandeWs {
@@ -49,7 +51,7 @@ public class CommandeWs {
         return new ResponseEntity<>(converter.convertToDto(found), HttpStatus.OK);
     }
 
-    @PostMapping("/ref/{ref}")
+    @PutMapping("/ref/{ref}")
     public ResponseEntity<CommandeDto> update(@PathVariable String ref, @RequestBody CommandeDto commandeDto) {
         Commande found = service.findByRef(ref);
         if (found == null) {
@@ -66,5 +68,10 @@ public class CommandeWs {
         }
         service.deleteByRef(ref);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+    @GetMapping("/")
+    public List<CommandeDto> findAll() {
+        return service.findAll().stream().map(converter::convertToDto).toList();
+
     }
 }

@@ -1,0 +1,42 @@
+server:
+  port: 8090
+
+spring:
+  application:
+    name: paiment-ms
+
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/paiment_db
+    username: root
+    password: ""
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+  eureka:
+    client:
+      serviceUrl:
+        defaultZone: http://localhost:8761/eureka
+    instance:
+      preferIpAddress: true
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      group-id: commande-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+        spring.json.value.default.type: org.example.paiment_micro.ws.dto.CommandDto
+
+app:
+  api:
+    baseUrl: http://localhost:8080/api
+    commande: http://localhost:8080/api/commande

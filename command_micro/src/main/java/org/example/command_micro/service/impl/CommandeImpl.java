@@ -7,6 +7,8 @@ import org.example.command_micro.service.facade.CommandService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class CommandeImpl implements CommandService {
     @Autowired
@@ -40,5 +42,8 @@ public class CommandeImpl implements CommandService {
         found.setTotalPaye(commande.getTotalPaye());
         commandeDao.save(found);
         return 1 ;
+    }
+    public List<Commande> findAll() {
+        return commandeDao.findAll();
     }
 }
