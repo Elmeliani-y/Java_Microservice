@@ -1,42 +1,95 @@
 server:
-  port: 8090
+  port: 8083
 
 spring:
-  application:
-    name: paiment-ms
-
+  main:
+    allow-bean-definition-overriding: true
   datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/paiment_db
+    url: jdbc:mysql://paiment-db:3306/paiment_db
     username: root
-    password: ""
-
+    password:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      maximum-pool-size: 10
+      pool-name: PaimentHikariPool
+      connection-test-query: SELECT 1
   jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect
     hibernate:
       ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+        show_sql: true
+        generate_statistics: true
+        jdbc:
+          time_zone: UTC
+        connection:
+          autoReconnect: true
+          characterEncoding: UTF-8
+          useUnicode: true
+    open-in-view: false
+
+  application:
+    name: paiment-microservice
 
   eureka:
     client:
       serviceUrl:
-        defaultZone: http://localhost:8761/eureka
+        defaultZone: http://eureka-server:8761/eureka/
     instance:
       preferIpAddress: true
 
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: kafka:9092
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: true
     consumer:
-      group-id: commande-group
+      group-id: paiment-group
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: "*"
-        spring.json.value.default.type: org.example.paiment_micro.ws.dto.CommandDto
+
+  management:
+    endpoints:
+      web:
+        exposure:
+          include: health,info
+    endpoint:
+      health:
+        show-details: always
+
+  sql:
+    init:
+      mode: always
+
+logging:
+  level:
+    root: INFO
+    org.springframework.boot: DEBUG
+    org.springframework.jdbc: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql: TRACE
+    org.springframework.orm.jpa: DEBUG
+    org.springframework.transaction: TRACE
+    org.example.paiment_micro: DEBUG
+    org.apache.kafka: WARN
+    org.springframework.boot.autoconfigure.jdbc: DEBUG
+    org.springframework.boot.jdbc: DEBUG
+    org.springframework.web: INFO
+    org.hibernate: DEBUG
 
 app:
   api:
-    baseUrl: http://localhost:8080/api
-    commande: http://localhost:8080/api/commande
+    baseUrl: http://command-micro:8080/api
+    commande: http://command-micro:8080/api/commande

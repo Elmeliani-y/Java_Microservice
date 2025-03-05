@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-@EnableDiscoveryClient
+
 @RestController
 @RequestMapping("api/commande")
 public class CommandeWs {
@@ -29,9 +29,9 @@ public class CommandeWs {
     @PostMapping("/add")
     public ResponseEntity<Map<String, String>> save(@RequestBody CommandeDto commandeDto) {
         if (service.findByRef(commandeDto.getRef()) != null) {
-            Map<String, String> respose = new HashMap<>();
-            respose.put("message", "already exists");
-            return new ResponseEntity<>(respose, HttpStatus.CONFLICT);
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "already exists");
+            return new ResponseEntity<>(response, HttpStatus.CONFLICT);
         }
 
         service.save(converter.convertToEntity(commandeDto));
@@ -57,8 +57,8 @@ public class CommandeWs {
         if (found == null) {
             return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
         }
-        service.update(ref, converter.convertToEntity(commandeDto));
-        return new ResponseEntity<>(commandeDto, HttpStatus.OK);
+        Commande updatedCommande = service.update(ref, converter.convertToEntity(commandeDto));
+        return new ResponseEntity<>(converter.convertToDto(updatedCommande), HttpStatus.OK);
     }
 
     @DeleteMapping("/ref/{ref}")
@@ -69,9 +69,9 @@ public class CommandeWs {
         service.deleteByRef(ref);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
+
     @GetMapping("/")
     public List<CommandeDto> findAll() {
         return service.findAll().stream().map(converter::convertToDto).toList();
-
     }
 }

@@ -1,0 +1,162 @@
+services:
+  command-db:
+    image: mysql:8.0
+    container_name: command-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: command_db
+      MYSQL_USER: command_user
+      MYSQL_PASSWORD: command_user_password
+      MYSQL_ROOT_HOST: "%"
+      TZ: UTC
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./command_micro/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+      - command-db-data:/var/lib/mysql
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "mysql", "-h", "localhost", "-u", "root", "-proot", "-e", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  paiment-db:
+    image: mysql:8.0
+    container_name: paiment-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: paiment_db
+      MYSQL_USER: paiment_user
+      MYSQL_PASSWORD: paiment_user_password
+      TZ: UTC
+    ports:
+      - "3307:3306"
+    volumes:
+      - ./paiment_micro/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+      - paiment-db-data:/var/lib/mysql
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    command: 
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+
+  zookeeper:
+    image: wurstmeister/zookeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    networks:
+      - microservices-network
+
+  kafka:
+    image: wurstmeister/kafka
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_ADVERTISED_HOST_NAME: kafka
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+    depends_on:
+      - zookeeper
+    networks:
+      - microservices-network
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "8081:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local-kafka
+      KAFKA_CLUSTERS_0_BOOTSTRAP_SERVERS: kafka:9092
+    depends_on:
+      - kafka
+    networks:
+      - microservices-network
+
+  eureka-server:
+    build: 
+      context: ./server_discovery
+      dockerfile: Dockerfile
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    networks:
+      - microservices-network
+
+  command-micro:
+    build: 
+      context: ./command_micro
+      dockerfile: Dockerfile
+    container_name: command-micro
+    ports:
+      - "8080:8080"
+    depends_on:
+      command-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://command-db:3306/command_db
+      - SPRING_DATASOURCE_USERNAME=command_user
+      - SPRING_DATASOURCE_PASSWORD=command_user_password
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
+      - SPRING_KAFKA_BOOTSTRAP-SERVERS=kafka:9092
+    networks:
+      - microservices-network
+    volumes:
+      - ./command_micro/logs:/app/logs
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  paiment-microservice:
+    build: 
+      context: ./paiment_micro
+      dockerfile: Dockerfile
+    container_name: paiment-microservice
+    ports:
+      - "8083:8083"
+    depends_on:
+      paiment-db:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      eureka-server:
+        condition: service_started
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://paiment-db:3306/paiment_db
+      - SPRING_DATASOURCE_USERNAME=paiment_user
+      - SPRING_DATASOURCE_PASSWORD=paiment_user_password
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
+      - SPRING_KAFKA_BOOTSTRAP-SERVERS=kafka:9092
+      - SPRING_MAIN_ALLOW-BEAN-DEFINITION-OVERRIDING=true
+    networks:
+      - microservices-network
+
+networks:
+  microservices-network:
+    driver: bridge
+
+volumes:
+  command-db-data:
+  paiment-db-data:

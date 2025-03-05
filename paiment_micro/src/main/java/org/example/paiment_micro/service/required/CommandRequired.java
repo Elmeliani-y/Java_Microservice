@@ -1,15 +1,11 @@
 package org.example.paiment_micro.service.required;
 
-import org.example.paiment_micro.ws.dto.CommandDto;
 import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 
-@FeignClient(name = "commande-micro", url = "${app.api.commande}")
+@FeignClient(name = "command-microservice")
 public interface CommandRequired {
-
-    @GetMapping("/ref/{ref}")
-    CommandDto findCommandeByRef(@PathVariable String ref);
-
-    @PutMapping("/ref/{ref}")
-    CommandDto update(@PathVariable String ref, @RequestBody CommandDto commandDto);
+    @GetMapping("/commands/ref/{ref}")
+    Object findByRef(@PathVariable("ref") String ref);
 }

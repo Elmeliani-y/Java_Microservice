@@ -1,17 +1,16 @@
 package org.example.paiment_micro.service.facade;
 
 import org.example.paiment_micro.bean.Paiment;
-import org.springframework.stereotype.Component;
+import org.example.paiment_micro.ws.dto.PaiementDto;
 
 import java.util.List;
 
-@Component
 public interface PaimentService {
-    int save (Paiment paiment);
-    Paiment findByCode(String code);
+    PaiementDto findByRef(String ref);
+    int save(Paiment paiment);
+    PaiementDto findByCode(String code);
     void deleteByCode(String code);
     void deleteByCommandeRef(String commandeRef);
-    Paiment findByCommandeRef(String commandeRef);
-    List<Paiment> findAll();
-
+    PaiementDto findByCommandeRef(String commandeRef);
+    List<PaiementDto> findAll();
 }

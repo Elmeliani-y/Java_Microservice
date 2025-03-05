@@ -1,12 +1,12 @@
 server:
-  port: 8080
+  port: 8082
 
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/command_db
+    url: jdbc:mysql://command-db:3306/commanddb
     username: root
-    password: ""
+    password: root
 
   jpa:
     hibernate:
@@ -14,16 +14,50 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQL8Dialect
+    show-sql: true
 
   application:
-    name: Command_Micro
+    name: command-microservice
 
+  # Eureka Configuration
+  eureka:
+    client:
+      serviceUrl:
+        defaultZone: http://localhost:8761/eureka/
+    instance:
+      preferIpAddress: true
+
+  # Kafka Configuration
   kafka:
     bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: true
     consumer:
       group-id: commande-group
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
-        spring.json.trusted.packages: "*"
+        spring.json.trusted.packages: "org.example.command_micro.ws.Dto,org.example.shared.dto,java.util,java.lang"
+        spring.json.type.mapping: commandDto:org.example.command_micro.ws.Dto.CommandeDto
+        spring.json.value.default.type: org.example.command_micro.ws.Dto.CommandeDto
+        spring.json.use.type.headers: false
+
+  # Management Endpoints
+  management:
+    endpoints:
+      web:
+        exposure:
+          include: health,info
+    endpoint:
+      health:
+        show-details: always
+
+logging:
+  level:
+    org.springframework.web: INFO
+    org.hibernate: ERROR
+    org.apache.kafka: WARN

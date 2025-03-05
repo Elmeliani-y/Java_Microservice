@@ -1,73 +1,71 @@
 package org.example.paiment_micro.service.impl;
 
-import jakarta.transaction.Transactional;
 import org.example.paiment_micro.bean.Paiment;
 import org.example.paiment_micro.dao.PaimentDao;
-import org.example.paiment_micro.service.kafka.KafkaProducer;
 import org.example.paiment_micro.service.facade.PaimentService;
 import org.example.paiment_micro.service.required.CommandRequired;
-import org.example.paiment_micro.ws.dto.CommandDto;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.example.paiment_micro.ws.dto.PaiementDto;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class PaimentImp implements PaimentService {
-
     private final PaimentDao paimentDao;
     private final CommandRequired commandRequired;
-    private final KafkaProducer kafkaProducer;
+    private final ModelMapper modelMapper;
 
-    @Autowired
-    public PaimentImp(PaimentDao paimentDao, CommandRequired commandRequired, KafkaProducer kafkaProducer) {
+    public PaimentImp(PaimentDao paimentDao, CommandRequired commandRequired, ModelMapper modelMapper) {
         this.paimentDao = paimentDao;
         this.commandRequired = commandRequired;
-        this.kafkaProducer = kafkaProducer;
+        this.modelMapper = modelMapper;
     }
 
     @Override
-    public int save(Paiment paiment) {
-        Paiment found = paimentDao.findByCode(paiment.getCode());
-        if (found != null) return -1;
-
-        CommandDto response = commandRequired.findCommandeByRef(paiment.getCommandeRef());
-        if (response == null) return -2;
-
-        double newTotalPaye = response.getTotalPaye() + paiment.getMontant();
-        if (newTotalPaye > response.getTotal()) return -3;
-
-        response.setTotalPaye(newTotalPaye);
-        paimentDao.save(paiment);
-        kafkaProducer.sendPaymentEvent(response);
-
-        return 1;
+    public PaiementDto findByRef(String ref) {
+        Object commande = commandRequired.findByRef(ref);
+        // Placeholder mapping
+        return new PaiementDto();
     }
 
     @Override
-    public Paiment findByCode(String code) {
-        return paimentDao.findByCode(code);
-    }
-
     @Transactional
+    public int save(Paiment paiment) {
+        Paiment savedPaiment = paimentDao.save(paiment);
+        return savedPaiment.getId().intValue();
+    }
+
     @Override
+    public PaiementDto findByCode(String code) {
+        Paiment paiment = paimentDao.findByCode(code);
+        return modelMapper.map(paiment, PaiementDto.class);
+    }
+
+    @Override
+    @Transactional
     public void deleteByCode(String code) {
         paimentDao.deleteByCode(code);
     }
 
-    @Transactional
     @Override
+    @Transactional
     public void deleteByCommandeRef(String commandeRef) {
         paimentDao.deleteByCommandeRef(commandeRef);
     }
 
     @Override
-    public Paiment findByCommandeRef(String commandeRef) {
-        return paimentDao.findByCommandeRef(commandeRef);
+    public PaiementDto findByCommandeRef(String commandeRef) {
+        Paiment paiment = paimentDao.findByCommandeRef(commandeRef);
+        return modelMapper.map(paiment, PaiementDto.class);
     }
 
     @Override
-    public List<Paiment> findAll() {
-        return paimentDao.findAll();
+    public List<PaiementDto> findAll() {
+        return paimentDao.findAll().stream()
+                .map(paiment -> modelMapper.map(paiment, PaiementDto.class))
+                .collect(Collectors.toList());
     }
 }
